@@ -9,11 +9,36 @@ import phywhisperer.usb as pw
 import sys
 phy = pw.Usb()
 phy.con(program_fpga=True)
+import geotpt
 
 buttonState = 0
 PULSEWIDTH = 35
 
 GDATA = b'witch1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n'
+
+CFG_COUNT = 200
+CFG_PULSE = 45
+CFG_DELAY = 425
+
+if __name__ == "__main__":
+  if len(sys.argv) == 1:
+    print("Please specify something")
+    sys.exit(0)
+  opts, leftover = getopt.getopt(sys.argv[1:],"d:c:p:",["delay=","coun=t","pulsewidth="])
+  for opt, arg in opts:
+    if opt in ["-d","--delay"]:
+      CFG_DELAY = int(arg)
+    elif opt in ["-c","--count"]:
+      CFG_COUNT = int(arg)
+    elif opt in ["-p","--pulsewidth"]:
+      CFG_PULSE = int(arg)
+
+print("-" * 80)
+print(" - CFG_COUNT is %d" % CFG_COUNT)
+print(" - CFG_PULSE is %d" % CFG_PULSE)
+print(" - CFG_DELAY is %d" % CFG_DELAY)
+print("-" * 80)
+sys.stdout.flush()
 
 def togglePin(in_bit):
   global buttonState
@@ -92,13 +117,13 @@ doResetAll = True
 import random
 
 glitchCtr = 0
-while glitchCtr <= 200:
+while glitchCtr <= CFG_COUNT:
   glitchCtr += 1
   ret = ""
-  PULSEWIDTH = random.randint(38,42)
-  base_trigger = phy.us_trigger(16.83)
+  PULSEWIDTH = random.randint(CFG_PULSE,CFG_PULSE + 10)
+  # base_trigger = phy.us_trigger(16.83)
   # delay_time = 3100 + (glitchCtr // 2)
-  delay_time = random.randint(15500,15600)
+  delay_time = random.randint(CFG_DELAY,CFG_DELAY + 10)
   if doResetAll:
     print("[%f] Resetting FPGA state" % delay_time)
     resetFPGA()
@@ -106,7 +131,6 @@ while glitchCtr <= 200:
   phy.set_pattern(capturemask,mask=[0xFF for c in capturemask])
   us_delay = delay_time
   print("True delay: %f, pulse width %d" % (us_delay,PULSEWIDTH))
-  # phy.set_usb_mode(mode="HS")
   if doResetAll:
     print("[%f] Resetting device and trying again" % delay_time)
     enterADB()

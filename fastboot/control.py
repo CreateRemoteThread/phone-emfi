@@ -1,9 +1,24 @@
 #!/usr/bin/env python3
 
+import getopt
 import sys
 import fastboot
 import time
 import phywhisperer.usb as pw
+
+CFG_DELAYBASE = 505
+CFG_COUNT = 400
+CFG_PULSE = 45
+
+if __name__ == "__main__":
+  opts, leftover = getopt.getopt(sys.argv[1:],"d:c:p:",["delay=","count=","pulsewidth="])
+  for opt, arg in opts:
+    if opt in ["-d","--delay"]:
+      CFG_DELAYBASE = int(arg)
+    elif opt in ["-c","--count"]:
+      CFG_COUNT = int(arg)
+    elif opt in ["-p","--pulsewidth"]:
+      CFG_PULSE = int(arg)
 
 phy = pw.Usb()
 phy.con(program_fpga=True)
@@ -18,6 +33,10 @@ def togglePin(in_bit):
     return
   buttonState = buttonState ^ (1 << in_bit)
   phy.write_reg(phy.REG_USERIO_DATA,[buttonState])
+
+def clearGPIO():
+  phy.set_power_source("off")
+  phy.write_reg(phy.REG_USERIO_DATA,[0])
 
 def enterFastboot():
   PIN_RST = 0
@@ -61,14 +80,12 @@ doResetAll = True
 import random
 
 glitchCtr = 0
-while glitchCtr <= 400:
+while glitchCtr <= CFG_COUNT:
   sys.stdout.flush()
   glitchCtr += 1
   ret = ""
-  PULSEWIDTH = random.randint(45,55)
-  # delay_time = random.randint(495,505) # Fail, oem command not supported
-  delay_time = random.randint(575,585)
-  # delay_time = phy.us_trigger(16.83) + random.randint(-20,20)
+  PULSEWIDTH = random.randint(CFG_PULSE,CFG_PULSE + 10)
+  delay_time = random.randint(CFG_DELAYBASE,CFG_DELAYBASE + 10)
   if doResetAll:
     print("[%f] Resetting FPGA state" % delay_time)
     resetFPGA()
@@ -142,6 +159,8 @@ while glitchCtr <= 400:
     phy.set_power_source("off")
     togglePin(3) # PIN_FET
     time.sleep(1.0)
+
+clearGPIO()
 
 while True:
   x = input("enter 'quit' to exit (prevent mega fuckups like oct6)")
