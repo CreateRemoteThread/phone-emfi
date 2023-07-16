@@ -6,7 +6,7 @@ import fastboot
 import time
 import phywhisperer.usb as pw
 
-CFG_DELAYBASE = 505
+CFG_DELAY = 505
 CFG_COUNT = 400
 CFG_PULSE = 45
 
@@ -14,11 +14,19 @@ if __name__ == "__main__":
   opts, leftover = getopt.getopt(sys.argv[1:],"d:c:p:",["delay=","count=","pulsewidth="])
   for opt, arg in opts:
     if opt in ["-d","--delay"]:
-      CFG_DELAYBASE = int(arg)
+      CFG_DELAY = int(arg)
     elif opt in ["-c","--count"]:
       CFG_COUNT = int(arg)
     elif opt in ["-p","--pulsewidth"]:
       CFG_PULSE = int(arg)
+
+print("-" * 80)
+print(" - CFG_COUNT is %d" % CFG_COUNT)
+print(" - CFG_PULSE is %d" % CFG_PULSE)
+print(" - CFG_DELAY is %d" % CFG_DELAY)
+print("-" * 80)
+sys.stdout.flush()
+
 
 phy = pw.Usb()
 phy.con(program_fpga=True)
@@ -85,7 +93,7 @@ while glitchCtr <= CFG_COUNT:
   glitchCtr += 1
   ret = ""
   PULSEWIDTH = random.randint(CFG_PULSE,CFG_PULSE + 10)
-  delay_time = random.randint(CFG_DELAYBASE,CFG_DELAYBASE + 10)
+  delay_time = random.randint(CFG_DELAY,CFG_DELAY + 10)
   if doResetAll:
     print("[%f] Resetting FPGA state" % delay_time)
     resetFPGA()

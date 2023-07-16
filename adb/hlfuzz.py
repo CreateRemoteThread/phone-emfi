@@ -9,7 +9,7 @@ import phywhisperer.usb as pw
 import sys
 phy = pw.Usb()
 phy.con(program_fpga=True)
-import geotpt
+import getopt
 
 buttonState = 0
 PULSEWIDTH = 35
