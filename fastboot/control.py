@@ -9,9 +9,10 @@ import phywhisperer.usb as pw
 CFG_DELAY = 505
 CFG_COUNT = 400
 CFG_PULSE = 45
+CFG_QUIET = False
 
 if __name__ == "__main__":
-  opts, leftover = getopt.getopt(sys.argv[1:],"d:c:p:",["delay=","count=","pulsewidth="])
+  opts, leftover = getopt.getopt(sys.argv[1:],"qd:c:p:",["quiet","delay=","count=","pulsewidth="])
   for opt, arg in opts:
     if opt in ["-d","--delay"]:
       CFG_DELAY = int(arg)
@@ -19,11 +20,15 @@ if __name__ == "__main__":
       CFG_COUNT = int(arg)
     elif opt in ["-p","--pulsewidth"]:
       CFG_PULSE = int(arg)
+    elif opt in ["-q","--quiet"]:
+      CFG_QUIET = True
 
 print("-" * 80)
 print(" - CFG_COUNT is %d" % CFG_COUNT)
 print(" - CFG_PULSE is %d" % CFG_PULSE)
 print(" - CFG_DELAY is %d" % CFG_DELAY)
+if CFG_QUIET is True:
+  print(" - CFG_QUIET set, oct6 blocker disabled")
 print("-" * 80)
 sys.stdout.flush()
 
@@ -169,6 +174,10 @@ while glitchCtr <= CFG_COUNT:
     time.sleep(1.0)
 
 clearGPIO()
+
+if CFG_QUIET is True:
+  print("CFG_QUIET is set, skipping oct6 blocker")
+  sys.exit(0)
 
 while True:
   x = input("enter 'quit' to exit (prevent mega fuckups like oct6)")

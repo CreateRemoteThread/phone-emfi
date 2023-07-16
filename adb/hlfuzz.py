@@ -19,12 +19,17 @@ GDATA = b'witch1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\
 CFG_COUNT = 200
 CFG_PULSE = 45
 CFG_DELAY = 425
+CFG_QUIET = False
+
+def clearGPIO():
+  phy.set_power_source("off")
+  phy.write_reg(phy.REG_USERIO_DATA,[0])
 
 if __name__ == "__main__":
   if len(sys.argv) == 1:
     print("Please specify something")
     sys.exit(0)
-  opts, leftover = getopt.getopt(sys.argv[1:],"d:c:p:",["delay=","coun=t","pulsewidth="])
+  opts, leftover = getopt.getopt(sys.argv[1:],"qd:c:p:",["quiet","delay=","coun=t","pulsewidth="])
   for opt, arg in opts:
     if opt in ["-d","--delay"]:
       CFG_DELAY = int(arg)
@@ -32,11 +37,15 @@ if __name__ == "__main__":
       CFG_COUNT = int(arg)
     elif opt in ["-p","--pulsewidth"]:
       CFG_PULSE = int(arg)
+    elif opt in ["-q","--quiet"]:
+      CFG_QUIET = True
 
 print("-" * 80)
 print(" - CFG_COUNT is %d" % CFG_COUNT)
 print(" - CFG_PULSE is %d" % CFG_PULSE)
 print(" - CFG_DELAY is %d" % CFG_DELAY)
+if CFG_QUIET is True:
+  print(" - CFG_QUIET set, oct6 blocker disabled")
 print("-" * 80)
 sys.stdout.flush()
 
@@ -161,6 +170,11 @@ while glitchCtr <= CFG_COUNT:
       print("process ok, continuing with 5s sleep")
     time.sleep(5.0)
     sys.stdout.flush()
+
+clearGPIO()
+if CFG_QUIET is True:
+  print("CFG_QUIET is set, skipping oct6 blocker")
+  sys.exit(0)
 
 while True:
   x = input("enter 'quit' to exit (prevent mega fuckups like oct6)")
