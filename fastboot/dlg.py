@@ -22,18 +22,16 @@ def testProcess():
     stdout = proc.stdout
     stderr = proc.stderr
     print("Normal Exit")
-    print(stdout)
-    print(stderr)
+    # print(stdout)
+    # print(stderr)
   except subprocess.TimeoutExpired as te:
     print("Timed out")
     stdout = te.stdout
     stderr = te.stderr
-    print(stdout)
-    print(stderr)
-    # fb timed out?
     proc.kill()
-    return False
-  return stdout
+    return (stdout,stderr,False)
+    # return False
+  return (stdout,stderr,True)
 
 if __name__ == "__main__":
   opts, leftover = getopt.getopt(sys.argv[1:],"qd:c:p:",["quiet","delay=","count=","pulsewidth="])
