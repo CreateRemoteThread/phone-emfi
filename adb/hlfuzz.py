@@ -59,7 +59,7 @@ def togglePin(in_bit):
 
 def testAdb():
   global GDATA
-  proc = subprocess.run(["adb","shell","/data/local/tmp/slimectr"],capture_output=True,timeout=5000);
+  proc = subprocess.run(["adb","shell","/data/local/tmp/slimectr"],capture_output=True,timeout=5);
   try:
     time.sleep(3.0)
     stdout = proc.stdout
