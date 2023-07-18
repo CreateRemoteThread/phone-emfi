@@ -2,7 +2,6 @@
 
 # high level fuzzer (using adb)
 
-import fastboot
 import time
 import subprocess
 import phywhisperer.usb as pw
@@ -14,12 +13,14 @@ import getopt
 buttonState = 0
 PULSEWIDTH = 35
 
-GDATA = b'witch1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n'
+# GDATA = b'witch1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n1:6250000\n0:6250000\n'
+GDATA = b'witch1:90000\n0:90000\n1:90000\n0:90000\n1:90000\n'
 
 CFG_COUNT = 200
 CFG_PULSE = 45
 CFG_DELAY = 425
 CFG_QUIET = False
+CFG_DELAY_RANGE = 10
 
 def clearGPIO():
   phy.set_power_source("off")
@@ -29,12 +30,14 @@ if __name__ == "__main__":
   if len(sys.argv) == 1:
     print("Please specify something")
     sys.exit(0)
-  opts, leftover = getopt.getopt(sys.argv[1:],"qd:c:p:",["quiet","delay=","coun=t","pulsewidth="])
+  opts, leftover = getopt.getopt(sys.argv[1:],"qd:c:p:r:",["quiet","delay=","coun=t","pulsewidth=","range="])
   for opt, arg in opts:
     if opt in ["-d","--delay"]:
       CFG_DELAY = int(arg)
     elif opt in ["-c","--count"]:
       CFG_COUNT = int(arg)
+    elif opt in ["-r","--range"]:
+      CFG_DELAY_RANGE = int(arg)
     elif opt in ["-p","--pulsewidth"]:
       CFG_PULSE = int(arg)
     elif opt in ["-q","--quiet"]:
@@ -59,25 +62,31 @@ def togglePin(in_bit):
 
 def testAdb():
   global GDATA
-  proc = subprocess.run(["adb","shell","/data/local/tmp/slimectr"],capture_output=True,timeout=5);
+  proc = None
   try:
+    proc = subprocess.run(["adb","shell","/data/local/tmp/slimectr2"],capture_output=True,timeout=10);
     time.sleep(3.0)
     stdout = proc.stdout
     stderr = proc.stderr
-    # stdout,stderr = proc.communicate(timeout=5.0)
     print(stdout)
-    if stdout != GDATA and stdout != b'witch' and stdout != b'':
-      print("unexpected")
+    if stdout is None:
+      print("stdout is none, crashed")
       sys.stdout.flush()
-      input(" > unexpected < ")
-      # proc.kill()
       return 0
-    if stdout == b"witch" or stdout == b"":
+    elif b'winner' in stdout:
+      print("unexpected, winner")
+      sys.stdout.flush()
+      input(" > winner winner chicken dinner < ")
+      return 1
+    elif stdout != GDATA:
+      print("unexpected - rebooting")
+      sys.stdout.flush()
+      return 0
+    elif stdout == b'witch' or stdout == b'':
       print("needs a reboot")
-      # proc.kill()
       return 0
+    print("NORMAL OUTPUT")
     print(stderr)
-    # proc.kill()
     return 1
   except subprocess.TimeoutExpired as te:
     stdout = te.stdout
@@ -87,7 +96,8 @@ def testAdb():
     proc.kill()
     return 0
   except:
-    pass
+    print("Cannot kill process")
+    return 0
 
 def enterADB():
   PIN_RST = 0
@@ -132,7 +142,7 @@ while glitchCtr <= CFG_COUNT:
   PULSEWIDTH = random.randint(CFG_PULSE,CFG_PULSE + 10)
   # base_trigger = phy.us_trigger(16.83)
   # delay_time = 3100 + (glitchCtr // 2)
-  delay_time = random.randint(CFG_DELAY,CFG_DELAY + 10)
+  delay_time = random.randint(CFG_DELAY,CFG_DELAY + CFG_DELAY_RANGE)
   if doResetAll:
     print("[%f] Resetting FPGA state" % delay_time)
     resetFPGA()
@@ -167,8 +177,9 @@ while glitchCtr <= CFG_COUNT:
       phy.set_power_source("off")
       togglePin(3) # PIN_FET
     else:
+      print(rval)
       print("process ok, continuing with 5s sleep")
-    time.sleep(5.0)
+    time.sleep(1.5)
     sys.stdout.flush()
 
 clearGPIO()
